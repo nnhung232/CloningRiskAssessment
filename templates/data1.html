@@ -1,0 +1,234 @@
+
+{% for key,value in form_data.items() %}
+<h2> {{key}}</h2>
+<p> {{value}}</p>
+promoter_sequence = {{value}}
+{% endfor %}
+import re #package; currently not using this package. Will take out if not used at the end of code.
+import regex #package; a little bit different from re = regular expression
+
+# Calculating the overall GC contents of the sequence
+def getGCcontent(seq):#first function of code.
+    c=0 #counter of how many bases within the sequence
+    a=0
+    g=0
+    t=0
+    for x in seq: #x = looping variable, where you are at in sequence 
+        if "C" in x: #counting bases within the sequence.
+            c+=1    
+        elif "G" in x:
+            g+=1
+        elif "A" in x:
+            a+=1    
+        elif "T" in x:
+            t+=1
+    #print("Base count - C=%d, G=%d, A=%d, T=%d" %(c,g,a,t))
+    gc_content=(g+c)*100/(a+t+g+c)
+    #print("Overall GC_content= %f" %(gc_content))
+    return gc_content # gc_content = local variable, return the GC contents back to the main program.
+
+# Defining the homopolymer sequences that are pre-defined.
+def gethomopolymer(seq): #2 function
+    total_matches_found = [] # creating an empty list to capture outputs.
+    promoter_substring = "TTTTTTTTTTTTTTTTTTTTTTTTT|CCCCCCCCCCC" #Python substring search = string[begin: end: step], counting up.
+    #print(promoter_substring)
+    y = ([[m.start(), m.end()] for m in regex.finditer(promoter_substring, seq, overlapped=1)]) # regular expression startment and find where the substrings exist within the full sequence.
+    matches_found = len(y)
+    if matches_found > 1:
+        total_matches_found.append(y)
+        #print(y)
+        for coordinate_pair in y: # y = all coordinate matches; coordinate_pair represents each coodinate pair individually
+            substring = seq[coordinate_pair[0]:coordinate_pair[1]] # looking into promoter sequence and then pull out subsequence represented by the coordinates. list[0] = first coordinate of substring and list[1] - last coordinate of substring.
+            print(coordinate_pair, substring) #coodinate_pair = coordinates and substring = sequence
+        #could have returned y; directly call the function in the main code.    
+
+
+# This function find location with the promoter sequence of a 50 base pair range that meets the criteria of >70% or <30% GC contents.
+def getGCsubstring(seq): # Function name
+    #total_checked = 0
+    #total_matches_found = 0
+    total_submatches_found = [] # creating empty list to capture final coordinates
+    for y in range(0, pro_length - 51): #pro_length = global variable (in body of the code); could have used this as a local variable within the function. 0, pro_length (1951), minus 50 bases is 1901
+        #print("subsequence starting at %d" %(y))
+        promoter_substring = promoter_sequence[y:y+50:1] #setting a loop in line 50 and then getting the 50 base pairs sequences for the sliding window for every 50 base pairs. Python substring search = string[begin: end: step], counting up.
+#    print(promoter_substring)
+        subsequence_gccontent = getGCcontent(promoter_substring) #getting the GC contents on each substring using the getGCcontent that is already written.
+        if (subsequence_gccontent >=70 or subsequence_gccontent <=30):
+           gc_match[y]= subsequence_gccontent #gc_match is a list that will hold all of the positions in the fiull sequence that are either above or below are throughhold.
+           #print(y, subsequence_gccontent,promoter_substring) # print start coodinate, % GC, and sequence.
+           <p>y, subsequence_gccontent,promoter_substring</p>
+        total_submatches_found.append(y) #append all of the start coodinates.
+            #print("subsequence starting at %d" %(y))
+        #print(promoter_substring)
+    range_start = 0 # start at coordinate 0
+    range_length = 49
+    last_key = -6 # start greater then 5 base pair
+    range_avg_gc = 0 # create a starting point for this variable
+    range_tot_gc = 0 # create a starting point for this variable
+    range_data_points = 1 # resetting to 1 for a new range.
+    for z in gc_match: # looking through all matches we have and putting together into long sequences. Go from start to finish of a range.
+        key = z #new variable, iterator. Look at each thing in list.
+#        range_data_points = range_data_points + 1
+#        range_tot_gc = range_tot_gc + gc_match[key]
+        print(key, range_start, range_length, gc_match[key]) # just printing out the key = iterator, range_length, and gc_match .
+        <p>key, range_start, range_length, gc_match[key]</p>
+        if key -5 >= last_key: # last key - 5; 5 bases apart. complete an existing range, and start a new one
+            range_avg_gc = range_tot_gc / range_data_points # 77-85 gap is > 5 bp then start new range.
+            final_ranges[range_start+1] = range_length + range_start + 1 # 78, 79, completing the last ranges.
+            final_gc_content[range_start+1] = range_avg_gc
+            print(range_data_points, range_tot_gc) # print just to see what we have
+            <p>range_data_points, range_tot_gc</p>
+            range_start=key # starting a new range (example start at 100)
+            range_length = 49 # starts at 0. This is why 49 instead of 50.
+            last_key = key # setting the last key to current value. lets say at 101 we are at 100 as the last key.
+            range_tot_gc = gc_match[key] # sets to the first value of position we are at in the sequence.
+            range_data_points = 1 # starting a new extended range. Set it to 1.
+        else: # extend an existing range;  less then 5 bp gap.
+            range_data_points = range_data_points + 1 # 87-90 - Keeping tracking of how many of the 50 base pair we are putting together.
+            range_tot_gc = range_tot_gc + gc_match[key]
+            range_length = range_length +(key - last_key)
+            last_key = (last_key + (key - last_key))
+
+    final_ranges[range_start+1] = range_length + range_start + 1  # complete the last range. finished with the last 50 and do not jump anywhere else.
+    range_avg_gc = range_tot_gc / range_data_points # calculate full GC contents over the extended range - finals GC contents lets say over 75 bases instead of our starting point of 50.
+    #final_ranges[range_start] = range_length
+    final_gc_content[range_start+1] = range_avg_gc # Duplicates of 77-79. 
+       
+## this function finds repeated sequences of a given size; reports the first match, and any additional matches
+## --- only checks that size ; does not try to expand the length of the match    
+def getseqrepeats(seq): # Function name
+    #total_checked = 0
+    #total_matches_found = 0
+    total_submatches_found = [] # creating empty list to capture final coordinates
+    sequenceschecked = []
+    for y in range(0, pro_length - 13): # 0, pro_length (1951), minus 50 bases is 1901
+        #print("subsequence starting at %d" %(y))
+        promoter_substring = promoter_sequence[y:y+12:1]
+        if promoter_substring not in sequenceschecked:       
+            y = ([[m.start(), m.end()] for m in regex.finditer(promoter_substring, seq, overlapped=1)])
+            matches_found = len(y)
+            if matches_found > 1:
+                total_submatches_found.append(y)
+        #print(y)
+                for list in y: #list = coordinates
+                    coordinates = seq[list[0]:list[1]] #generating the sequence
+                    print(list, coordinates)
+                sequenceschecked.append(promoter_substring)
+    return total_submatches_found
+
+## this function finds repeated sequences starting with a given size, and expanding the size-window 1bp at a time
+def getseqrepeats1(seq): # Function name
+    #total_checked = 0
+    #total_matches_found = 0
+    init_window_size = 13 # initial size ; check to see if should be 12 and not 13. check code for this.
+    expanded = 0 # initial condidtion to expand target sequence size. Starts at 0
+    total_submatches_found1 = [] # creating empty list to capture final coordinates
+    sequenceschecked1 = [] # creating empty list to add to. Keeping track of all repeats that we have already checked.
+    xxx = range(0, pro_length - init_window_size) #stop here 07012022
+#    print(xxx)
+    xxx_iter = iter(xxx)
+#    print(xxx_iter)
+#    for xxx_iter:
+#    for xx in range(0, pro_length - init_window_size): # 0, pro_length (1951), minus 50 bases is 1901
+#    for xx in xxx: # 0, pro_length (1951), minus 50 bases is 1901
+    while(True):
+        try:
+            xx = next(xxx_iter)
+        except StopIteration: 
+            break
+        else:
+#        print("xx = ", xx)
+            init_window_size = 13
+        #print("subsequence starting at %d" %(y))
+            promoter_substring = promoter_sequence[xx:xx+init_window_size-1:1]
+            if promoter_substring not in sequenceschecked1:       
+                y = ([[m.start(), m.end()] for m in regex.finditer(promoter_substring, seq, overlapped=1)])
+                matches_found = len(y)
+                if matches_found > 1:
+                    expanded = 0
+        # start expanding window size to find max size that still matches somewhere else      
+                    while (matches_found > 1):
+                        expanded = expanded + 1
+                        init_window_size = init_window_size + 1    
+                        promoter_substring = promoter_sequence[xx:xx+init_window_size-1:1]
+                        if promoter_substring not in sequenceschecked1:       
+                            y = ([[m.start(), m.end()] for m in regex.finditer(promoter_substring, seq, overlapped=1)])
+                            matches_found = len(y)
+#                            print(xx, init_window_size, expanded)
+                            sequenceschecked1.append(promoter_substring)
+                                
+                            total_submatches_found1.append(y)
+                
+                    for list in y: #list = coordinates
+                        foundsequencerepeat = seq[list[0]:list[1]-1] #generating the sequence
+                        print(list, foundsequencerepeat)
+                        <p>list, foundsequencerepeat</p> 
+            sequenceschecked1.append(promoter_substring)
+#        print("expanded = ", expanded)
+            while(expanded > 1):
+                next(xxx_iter)
+                expanded = expanded - 1
+    return total_submatches_found1, xxx
+    
+
+
+ 
+
+
+
+
+
+
+
+
+    
+#        
+#        
+#        
+##            print(sum())
+##        if (i>=70 and i<=30):
+##            print("In list")
+##        else:
+##            print("Not in list")
+        
+#promoter_sequence = 'TTTTTTTTTTTTTTTTTTTTTTTTTGCTCACTCACCACTCACTATCCCCCCCCCCCGCTCACTCACCACTCACTATCACTCAAAAAGAATTTTTTTTTTTTTTTTTTTTTTTTTTCTTATCTCTTGAAACAACAACGGACCGCTCAGGTAAGTACTCCTCTTCTCTCTCTCGGCAAAAAATTAAAAAACCCTAGGCGGATTCGTTTCTTCTCTCTCCCTCTCGACCGCGTTTTCTCTCTTCTGTTAGCGATCACTCGTTGTTTCGTTTCTTCACTTTTTTCGCCTTCGTGTGTCTCAATTCTCTCTCTCTTCTCGGAAAGAGTTGAGATCTCTCGTTGCTAGGGTTTCTCTCTCTCTTTCTCAAACCCCACCCAAAAAAAACCCTAGGGTTTTGGTGATTTGGGGTTTTGGATTTCGATTTTTCAATTCGATCTGCGATTTTCTCGGATCTGTGCCTTTTTTTCTCGTCGTTCGTTTTCGCTCTTCTCTCCTTTTCCTTCGATTTCTCGTCGCTCTTTCTCTCAATTCGTTTCCGTTTTTCCACTTCACTCTGCCTAGGGTTTGGTGAAATTCTGGGTTTCTCGATCGTGTTTACTCTCTTCTCCGATTTTCGATTCTCTGGGTTTTTCCTCAACTCTCTTCGATTTTCCTTCACTCTCTTCGTTCGTTTTCCTCTTTCGATTTATTCGGATCCGATCTCTTTCGTTTCTCTCCACTGACTAATTACTCTCTCTCCTACCTTTTCAGGTTTTACTCGAGGTACCACCATGGCGGCGTCATCTTCGTCCGTCGTGAGCTTCTCGGGCATCTCGTTGTGCAGTACTCACTCGATCTCCAACAAGACCTATCTATTCTCCGCCCACCCGCGCATTTCGGTGTCGTTCCCCAGTAAGCCCAATAGTTTGAAGTCCTTCAAGCAGCTCCAGCTGAAGAAGAACGGACTCTTTGAGAAGTTCTCTCGTACCTCCAGTCGGAGCTTCGTGGTGAGGTGCGACGCGTCGAAGGCCTTGGTACTGTACTCGACGCGGGACGGCCAGACCCACGCAATTGCTTCATACATCGCCTCCTGCATGAAGGAGAAGGCCGAATGCGACGTGATCGACCTCACCCACGGGGAGCACGTGAACCTCACCCAATACGATCAGGTGCTAATCGGTGCGAGTATTCGTTACGGCCACTTCAACGCCGTGCTTGACAAGTTCATCAAGAGAAACGTGGATCAGCTGAACAACATGCCAAGCGCGTTCTTCTGCGTAAACCTCACAGCAAGGAAGCCCGAGAAGCGTACTCCCCAGACAAACCCTTATGTCCGAAAATTCTTGCTTGCTACCCCCTGGCAGCCCGCGTTGTGCGGAGTGTTCGCAGGGGCCCTTCGGTACCCGCGATACCGGTGGATCGACAAGGTGATGATCCAGCTAATAATGCGGATGACTGGGGGAGAGACAGACACGAGCAAGGAGGTCGAGTACACGGATTGGGAGCAGGTTAAGAAGTTCGCGGAGGATTTTGCAAAGCTATCGTACAAGAAGGCCCTCTAGTAGGCCGGCCTAATGGATATATATATATTTGTGCGGCGGATCTGTGTGGTTTGAACACACCGCCGCCGTGCAAGCTAGCTAGTTTTTCTTTGTTTGTTTTGTGTATTTGTGTTGTAAAGAACTATATTTCTTCTGATTGGAATAAATAAAATTATTATTTCATACCTCGTCTTGTGTGGTTCTTGTGCCGCCACAAATACCACCGAGAGAATTGTAGTATCTGTTTGTGTTTCTTGTTGCTACTAGCTGGTTTTGTTTGTTGTGCCGCCGGCGAGGATATATCCTTTTTGGTTCCACTTCTGAGTGATTGTATCAAACACTTGTAAACTCTTCTGATTTGTAATAAAGTTATTGTTTTGTCATACCTTTCTTGTTTGGGTCTAGTATATAATTTTTGCGCCACGCTGCGGTTT'
+#promoter_sequence = 'ATGGCGCAAGTTAGCAGAATCTGCAATGGTGTGCAGAACCCATCTCTTATCTCCAATCTCTCGAAATCCAGTCAACGCAAATCTCCCTTATCGGTTTCTCTGAAGACGCAGCAGCATCCACGAGCTTATCCGATTTCGTCGTCGTGGGGATTGAAGAAGAGTGGGATGACGTTAATTGGCTCTGAGCTTCGTCCTCTTAAGGTCATGTCTTCTGTTTCCACGGCGTGCATGCTTCACGGTGCAAGCAGCCGGCCCGCAACCGCCCGCAAATCCTCTGGCCTTTCCGGAACCGTCCGCATTCCCGGCGACAAGTCGATCTCCCACCGGTCCTTCATGTTCGGCGGTCTCGCGAGCGGTGAAACGCGCATCACCGGCCTTCTGGAAGGCGAGGACGTCATCAATACGGGCAAGGCCATGCAGGCGATGGGCGCCCGCATCCGTAAGGAAGGCGACACCTGGATCATCGATGGCGTCGGCAATGGCGGCCTCCTGGCGCCTGAGGCGCCGCTCGATTTCGGCAATGCCGCCACGGGCTGCCGCCTGACGATGGGCCTCGTCGGGGTCTACGATTTCGACAGCACCTTCATCGGCGACGCCTCGCTCACAAAGCGCCCGATGGGCCGCGTGTTGAACCCGCTGCGCGAAATGGGCGTGCAGGTGAAATCGGAAGACGGTGACCGTCTTCCCGTTACCTTGCGCGGGCCGAAGACGCCGACGCCGATCACCTACCGCGTGCCGATGGCCTCCGCACAGGTGAAGTCCGCCGTGCTGCTCGCCGGCCTCAACACGCCCGGCATCACGACGGTCATCGAGCCGATCATGACGCGCGATCATACGGAAAAGATGCTGCAGGGCTTTGGCGCCAACCTTACCGTCGAGACGGATGCGGACGGCGTGCGCACCATCCGCCTGGAAGGCCGCGGCAAGCTCACCGGCCAAGTCATCGACGTGCCGGGCGACCCGTCCTCGACGGCCTTCCCGCTGGTTGCGGCCCTGCTTGTTCCGGGCTCCGACGTCACCATCCTCAACGTGCTGATGAACCCCACCCGCACCGGCCTCATCCTGACGCTGCAGGAAATGGGCGCCGACATCGAAGTCATCAACCCGCGCCTTGCCGGCGGCGAAGACGTGGCGGACCTGCGCGTTCGCTCCTCCACGCTGAAGGGCGTCACGGTGCCGGAAGACCGCGCGCCTTCGATGATCGACGAATATCCGATTCTCGCTGTCGCCGCCGCCTTCGCGGAAGGGGCGACCGTGATGAACGGTCTGGAAGAACTCCGCGTCAAGGAAAGCGACCGCCTCTCGGCCGTCGCCAATGGCCTCAAGCTCAATGGCGTGGATTGCGATGAGGGCGAGACGTCGCTCGTCGTGCGTGGCCGCCCTGACGGCAAGGGGCTCGGCAACGCCTCGGGCGCCGCCGTCGCCACCCATCTCGATCACCGCATCGCCATGAGCTTCCTCGTCATGGGCCTCGTGTCGGAAAACCCTGTCACGGTGGACGATGCCACGATGATCGCCACGAGCTTCCCGGAGTTCATGGACCTGATGGCCGGGCTGGGCGCGAAGATCGAACTCTCCGATACGAAGGCTGCCTGA'
+pro_length = len(promoter_sequence) # define the length of a sequence and use a variable which will be used later
+print("Promoter length = %d" %(pro_length))# d = integer, f=float
+<p>"Promoter length = %d" %(pro_length</p>
+sequence_gccontent = getGCcontent(promoter_sequence)#local of gccontent (in 1st function) now becomes a global variable = sequence_gccontent
+print(sequence_gccontent) #shows up in the output items.
+<p>sequence_gccontent</p>
+
+#print process details function.
+#total_checked = 0
+#total_matches_found = 0
+#for y in range(0, pro_length - 201): # 0, pro_length (1870), minus 20 bases is 1850
+#    print("subsequence starting at %d" %(y))
+#    promoter_substring = promoter_sequence[y:y+200:1] #Python substring search = string[begin: end: step], counting up.
+##    print(promoter_substring)
+#    subsequence_gccontent = getGCcontent(promoter_substring)
+  
+gethomopolymer(promoter_sequence) # directly recall the function.
+gc_match = {}
+final_ranges = {}
+final_gc_content = {}
+getGCsubstring(promoter_sequence)
+print(final_ranges)
+<p>final_ranges</p> 
+print(final_gc_content)
+<p>final_gc_content</p> 
+for key in final_ranges:
+    stop_coordinate = key+final_ranges[key]
+    range_substring = promoter_sequence[key-1:final_ranges[key]:1]
+    print(key, final_ranges[key], final_gc_content[key], range_substring)
+    <p>key, final_ranges[key], final_gc_content[key], range_substring</p> 
+    corrected_subsequence_gccontent = getGCcontent(range_substring)
+    print(corrected_subsequence_gccontent)
+    <p>corrected_subsequence_gccontent</p>
+print("getting seqrepeats")
+<p>"getting seqrepeats"</p> 
+seqrepeatslist = getseqrepeats(promoter_sequence)
+print("getting seqrepeats1")
+<p>"getting seqrepeats1"</p>
+seqrepeatslist1, my_iter = getseqrepeats1(promoter_sequence)

@@ -1,0 +1,19 @@
+<html>
+<head>
+    <title>Upload promoter sequences and parameters</title>
+</head>
+<body>   
+    <form action="/data" method = "POST" enctype="multipart/form-data">
+        <p><b>sequence input:</b></p>
+        <p>Paste a single sequence <input type = "text" name = "Sequence" /></p>
+        <p>OR</p>
+        <p>Upload a fasta file <input type = "file" name = "file" /></p>
+        <br />
+        <p><b>User-defined parameters:</b></p>
+        <p>Low Threshold <input type = "int" name = "lowThreshold" /></p>
+        <p>High Threshold <input type = "int" name = "highThreshold" /></p>
+        <br />
+        <p><input type = "submit" value = "Submit" /></p>
+    </form>
+</body>
+</html>
